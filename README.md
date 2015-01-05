@@ -17,6 +17,8 @@ Installation:
 
 The firmware is curently made for the Arduino MEGA board, with the ESP8266
 connected to the Serial1 port (I/O 18,19).
+To compile and build this, the Arduino 1.0.6 IDE (or higher version) is
+required. 
 
 Usage:
 ------
@@ -33,3 +35,4 @@ Default Settings:
 
 You can reset the board to default settings if you restart the board with
 IO pin 12 connected to GND. 
+
