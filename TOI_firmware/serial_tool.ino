@@ -38,23 +38,48 @@ int expect(char* expectstr, int timeout)
   return 1;
 }
 
+int send_expect(char* sendstr, char* expectstr, int timeout) 
+{
+  Serial1.println(sendstr);
+#ifdef SER_DEBUG
+  Serial.print("Sent: ");
+  Serial.println(sendstr);  
+#endif
+  
+  return expect(expectstr,timeout);
+}
+
 int send_expect(String sendstr, char* expectstr, int timeout) 
 {
   Serial1.println(sendstr);
 #ifdef SER_DEBUG
   Serial.print("Sent: ");
-  Serial.println(sendstr);
+  Serial.println(sendstr);  
 #endif
   
   return expect(expectstr, timeout);
 }
 
-int send_expect(char* sendstr, char* expectstr, int timeout) 
+void send(char* sendstr) 
 {
-  String tmp = sendstr;
-  
-  return send_expect(tmp,expectstr,timeout);
+  Serial1.print(sendstr);
+#ifdef SER_DEBUG
+  Serial.print("Sent: ");
+  Serial.println(sendstr);  
+#endif
 }
+
+void send(int val) 
+{
+  char sendstr[6];
+  sprintf(sendstr,"%i",val);
+  Serial1.print(sendstr);
+#ifdef SER_DEBUG
+  Serial.print("Sent: ");
+  Serial.println(sendstr);  
+#endif
+}
+
 
 void serial_flush()
 {
@@ -69,8 +94,8 @@ int send_dump(char* sendstr)
   char tmp;
   
   Serial1.println(sendstr);
-  Serial.println("--------------- DUMP ---------------");
-  Serial.print("Sent: ");
+  Serial.println(F("--------------- DUMP ---------------"));
+  Serial.print(F("Sent: "));
   Serial.println(sendstr);
 
   while (tmp != '\n') {
@@ -93,7 +118,7 @@ int send_dump(char* sendstr)
       Serial.write(tmp);
     }
   }
-  Serial.println("--------------- DUMP ---------------");
+  Serial.println(F("--------------- DUMP ---------------"));
   serial_flush();
 }
 
@@ -101,8 +126,8 @@ int serial_read(char* buffer, int offset, int length)
 {
   int count=0;
   
-  if (Serial1.available() == 0)
-    return 0;
+//  if (Serial1.available() == 0)
+//    return 0;
   
   while(Serial1.available() > 0) {
     buffer[offset]=Serial1.read();

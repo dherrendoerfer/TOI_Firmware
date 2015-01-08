@@ -27,13 +27,14 @@ int connectWiFi(char* ssid, char* pass)
 #endif
   }
  
-  String cmd="AT+CWJAP=\"";
-  cmd+=ssid;
-  cmd+="\",\"";
-  cmd+=pass;
-  cmd+="\"";
-  
-  return send_expect(cmd,"OK\r\n",20000);
+  send("AT+CWJAP=\"");
+  send(ssid);
+  send("\",\"");
+  send(pass);
+  send("\"");
+  send("\r\n");
+
+  return expect("OK\r\n",20000);
 }
 
 int connectAP(char* ssid, char* pass, int chan, int enc)
@@ -44,32 +45,35 @@ int connectAP(char* ssid, char* pass, int chan, int enc)
 #endif
   }
  
-  String cmd="AT+CWSAP=\"";
-  cmd+=ssid;
-  cmd+="\",\"";
-  cmd+=pass;
-  cmd+="\",";
-  cmd+=String(chan);
-  cmd+=",";
-  cmd+=String(enc);
+  send("AT+CWSAP=\"");
+  send(ssid);
+  send("\",\"");
+  send(pass);
+  send("\",");
+  send(chan);
+  send(",");
+  send(enc);
+  send("\r\n");
   
-  return send_expect(cmd,"OK\r\n",20000);
+  return expect("OK\r\n",20000);
 }
 
 int setup_server(int port)
 {
-  String cmd = "AT+CIPSERVER=1,";
-         cmd += String(port);
+  send("AT+CIPSERVER=1,");
+  send(port);
+  send("\r\n");
 
-  return send_expect(cmd,"OK\r\n",1000);
+  return expect("OK\r\n",1000);
 }
 
 int stop_server(int port)
 {
-  String cmd = "AT+CIPSERVER=0,";
-         cmd += String(port);
+  send("AT+CIPSERVER=0,");
+  send(port);
+  send("\r\n");
 
-  return send_expect(cmd,"OK\r\n",1000);
+  return expect("OK\r\n",1000);
 }
 
 int set_multicon()
@@ -82,24 +86,42 @@ int unset_multicon()
   return send_expect("AT+ CIPMUX=0","OK\r\n",1000);
 } 
 
-int send_ipdata(int ch_id,String data)
+int send_ipdata_head(int ch_id,char* data, int length)
 {
-  String cmd="AT+CIPSEND=";
-  cmd+=String(ch_id);
-  cmd+=",";
-  cmd+=String(data.length());
+  send("AT+CIPSEND=");
+  send(ch_id);
+  send(",");
+  send(length);
+  send("\r\n");
 
-  if(send_expect(cmd,">",1000))
-    return 1;
+  if ( !expect(">",1000) ) {
+    send(data);
+    return 0;
+  }
+  return 1;
+}
+
+void send_ipdata(char* data )
+{
+  send(data);
+}
+
+void send_ipdata(int data )
+{
+  send(data);
+}
+
+int send_ipdata_fin(char* data)
+{
   return send_expect(data,"OK\r\n",5000);
 }
 
 int close_channel(int ch_id)
 {
-  String cmd="AT+CIPCLOSE=";
-  cmd+=String(ch_id);
+  send("AT+CIPCLOSE=");
+  send(ch_id);
 
-  return send_expect(cmd,"OK\r\n",1000);
+  return expect("OK\r\n",1000);
 }
 
 int buffer_position = 0;
@@ -112,7 +134,7 @@ int esp_poll()
    * and other such things. */
   
   int read = 0; 
-  read = serial_read(input_buffer, buffer_position, BUFFER_SIZE-buffer_position);
+  read = serial_read(input_buffer, buffer_position, BUFFER_SIZE-buffer_position-1);
   buffer_position+=read;
   
   if (read)
@@ -130,27 +152,39 @@ int esp_poll()
 #endif
 
   /* Receive IP data */
-  String ip_data=String(input_buffer);
+  //String ip_data=String(input_buffer);
   
   /* Only get is supported, so we can stop reading the 
-   * inpu buffer once the complete get request is read */
+   * input buffer once the complete get request is read */
+ 
+  if (strstr(input_buffer,"Link") && buffer_position == 6) {
+    input_buffer[0]=0;
+    buffer_position = 0;
+    timeout_count = 0;
+  }
+
+  if (strstr(input_buffer,"Unlink") && buffer_position == 8) {
+    input_buffer[0]=0;
+    buffer_position = 0;
+    timeout_count = 0;
+  }
    
-  if (ip_data.indexOf("+IPD") >= 0) {
+  if (strstr(input_buffer,"+IPD")) {
 #ifdef ESP_DEBUG
     Serial.println("IPD found:");
 #endif
-    if (ip_data.indexOf("GET") >= 0) {
+    if (strstr(input_buffer,"GET")) {
 #ifdef ESP_DEBUG
       Serial.println("GET found:");
 #endif
-      if (ip_data.indexOf("HTTP") >= 0) {
+      if (strstr(input_buffer,"HTTP")) {
 #ifdef ESP_DEBUG
         Serial.println("HTTP found:");
 #endif
 
         /* We got what we need for now, 
          * eat everything up to the next OK. */
-        if (ip_data.indexOf("OK") >= 0) {
+        if (strstr(input_buffer,"OK")) {
 #ifdef ESP_DEBUG
           Serial.println("OK found:");
 #endif
@@ -159,7 +193,7 @@ int esp_poll()
         }
         
         /* Handle the request */
-        request_get(ip_data);
+        request_get(input_buffer, buffer_position);
         
         input_buffer[0]=0;
         buffer_position = 0;

@@ -17,13 +17,18 @@
  *   along with uCNC_controller.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+//#define INFO_DEBUG 1
+
 #include <stdlib.h>
+
+#include <SoftwareSerial.h>
+SoftwareSerial Serial1(10,11);
 
 #define HEARTBEAT_LED 13
 #define RESET_PIN     12
 
-#define SSID "Default"
-#define PASS "MyGoodPasswd"
+#define SSID "DefaultSsid"
+#define PASS "DefaultPass"
 
 char e_SSID[32] = SSID;
 char e_PASS[32] = PASS;
@@ -31,12 +36,14 @@ int  e_AP       = 0;
 int  e_ENC      = 0;
 int  e_CHAN     = 10;
 
-#define APSSID "IOT_Default"
+int t_MsPerSec  = 1000;
+
+#define APSSID "TOI_Default"
 #define APPASS ""
 #define APCHAN 10
 #define APENC 0
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 160
 char input_buffer[BUFFER_SIZE];
 
 int shutdown = 0;
@@ -45,25 +52,34 @@ int defaultAP = 1;
 
 void setup()
 {
-  Serial1.begin(9600);
   Serial.begin(9600);
+  Serial1.begin(9600);
   
   pinMode(HEARTBEAT_LED, OUTPUT);
   pinMode(RESET_PIN, INPUT_PULLUP);
 
-  Serial.print("Reset pin state is:");
+#ifdef INFO_DEBUG
+  Serial.print(F("Reset pin state is:"));
   Serial.println(digitalRead(RESET_PIN));
- 
+#endif
+
   if (check_eeprom() && digitalRead(RESET_PIN)) {
-    Serial.println("Using config from EEPROM");
+#ifdef INFO_DEBUG
+    Serial.println(F("Using config from EEPROM"));
+#endif
     read_eeprom();
     defaultAP = 0;
   }
 }
 
+unsigned long time;
+unsigned long next_ms_seconds = millis()+t_MsPerSec;
+unsigned int seconds = 0;
+unsigned int minutes = 0;
+unsigned int hours = 0;
+unsigned int days = 0;
+
 void loop() {
-  unsigned long time;
-  unsigned long seconds = 0;
 
   /* Start up Wifi */
   if (!send_expect("AT","OK\r\n",500)){
@@ -77,12 +93,16 @@ void loop() {
       }
     }
   } else {
-    Serial.println("No response from ESP8266 will retry in 60s.");
+#ifdef INFO_DEBUG
+    Serial.println(F("No response from ESP8266 will retry in 60s."));
+#endif
     delay(60000);
     return;
   }
-  
+
+#ifdef INFO_DEBUG  
   send_dump("AT+CIFSR");
+#endif
 
   set_multicon();
   setup_server(80);
@@ -90,26 +110,47 @@ void loop() {
   while (!shutdown) {
     time = millis();
 
-    if (time % 10 == 0) {
-      /* Call the server service routine every 10ms*/
+    if (Serial1.available() > 0) {
+      /* Call the server service routine if there is data */
       esp_poll();
     }
     
-    if (time % 1000 == 0) {
+    if ( (long)(time - next_ms_seconds) >= 0 ) {
+      next_ms_seconds += t_MsPerSec;
       seconds++;
+      if (seconds > 59) {
+        seconds = 0;
+        minutes++;
+        if (minutes > 59) {
+          minutes = 0;
+          hours++;
+          if (hours > 23) {
+            hours = 0;
+            days++;
+            if (days > 7) {
+              days = 0;
+            }
+          }
+        }
+      }
+      
       /*Hearteat LED*/
       digitalWrite(13, seconds % 2);
-      delay(1);
     }
   }
   
   while (!reboot)
   {
-    Serial.println("Shutdown. Cycle power or reset.");
+ #ifdef INFO_DEBUG
+    Serial.println(F("Shutdown. Cycle power or reset."));
+ #endif
     delay(60000);
   }
-  
-  Serial.println("Rebooting.");
+
+#ifdef INFO_DEBUG  
+  Serial.println(F("Rebooting."));
+#endif
+
   shutdown=0;
   reboot=0;
   stop_server(80);
