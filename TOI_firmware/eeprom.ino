@@ -1,20 +1,20 @@
 /*
- * This file is part of esp_webserver.
+ * This file is part of TOI_firmware.
  *
  * Copyright (C) 2015  D.Herrendoerfer
  *
- *   uCNC_controller is free software: you can redistribute it and/or modify
+ *   TOI_firmware is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
- *   uCNC_controller is distributed in the hope that it will be useful,
+ *   TOI_firmware is distributed in the hope that it will be useful,
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with uCNC_controller.  If not, see <http://www.gnu.org/licenses/>.
+ *   along with TOI_firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <EEPROM.h>
@@ -51,6 +51,13 @@ void read_eeprom()
   e_ENC  = EEPROM.read(byte++);
   e_CHAN = EEPROM.read(byte++);
 
+  t_usPerSec  = EEPROM.read(byte++);
+  t_usPerSec += (EEPROM.read(byte++) << 8) & 0xff00;
+  t_usPerSec += (long)(EEPROM.read(byte++) << 16) & 0xff0000;
+  t_usPerSec += (long)(EEPROM.read(byte++) << 24) & 0xff000000;
+  
+  Serial.println(t_usPerSec);
+
 }
 
 void write_eeprom()
@@ -69,6 +76,11 @@ void write_eeprom()
   EEPROM.write(byte++,e_AP & 0xff);
   EEPROM.write(byte++,e_ENC & 0xff);
   EEPROM.write(byte++,e_CHAN & 0xff);
+  
+  EEPROM.write(byte++,t_usPerSec & 0xff);
+  EEPROM.write(byte++,(t_usPerSec >>  8) & 0xff);
+  EEPROM.write(byte++,(t_usPerSec >> 16) & 0xff);
+  EEPROM.write(byte++,(t_usPerSec >> 24) & 0xff);
   
   EEPROM.write(0,42);
   EEPROM.write(1,42);

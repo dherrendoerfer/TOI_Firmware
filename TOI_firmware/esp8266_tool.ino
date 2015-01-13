@@ -1,20 +1,20 @@
 /*
- * This file is part of esp_webserver.
+ * This file is part of TOI_firmware.
  *
  * Copyright (C) 2015  D.Herrendoerfer
  *
- *   uCNC_controller is free software: you can redistribute it and/or modify
+ *   TOI_firmware is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
- *   uCNC_controller is distributed in the hope that it will be useful,
+ *   TOI_firmware is distributed in the hope that it will be useful,
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with uCNC_controller.  If not, see <http://www.gnu.org/licenses/>.
+ *   along with TOI_firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 //#define ESP_DEBUG 1
@@ -62,6 +62,28 @@ int setup_server(int port)
 {
   send("AT+CIPSERVER=1,");
   send(port);
+  send("\r\n");
+
+  return expect("OK\r\n",1000);
+}
+
+int connect_host(int ch_id, char* host, int port)
+{
+  send("AT+CIPSTART=");
+  send(ch_id);
+  send(",\"TCP\",\"");
+  send(host);
+  send("\",");
+  send(port);
+  send("\r\n");
+
+  return expect("OK\r\n",3000);
+}
+
+int close_channel(int ch_id)
+{
+  send("AT+CIPCLOSE=");
+  send(ch_id);
   send("\r\n");
 
   return expect("OK\r\n",1000);
@@ -116,12 +138,17 @@ int send_ipdata_fin(char* data)
   return send_expect(data,"OK\r\n",5000);
 }
 
-int close_channel(int ch_id)
+int http_req_get(char* host,   char* URL, char* resp_buffer, int buffer_length)
 {
-  send("AT+CIPCLOSE=");
-  send(ch_id);
-
-  return expect("OK\r\n",1000);
+  //open connection
+  
+  //send request
+  
+  //wait for response
+  
+  //receive return document
+  
+  return 0;
 }
 
 int buffer_position = 0;

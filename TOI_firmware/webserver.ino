@@ -1,23 +1,23 @@
 /*
- * This file is part of esp_webserver.
+ * This file is part of TOI_firmware.
  *
  * Copyright (C) 2015  D.Herrendoerfer
  *
- *   uCNC_controller is free software: you can redistribute it and/or modify
+ *   TOI_firmware is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
- *   uCNC_controller is distributed in the hope that it will be useful,
+ *   TOI_firmware is distributed in the hope that it will be useful,
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with uCNC_controller.  If not, see <http://www.gnu.org/licenses/>.
+ *   along with TOI_firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define SERV_DEBUG 1
+#define SERV_DEBUG 1
 
 int request_get( char* ip_buffer, int length)
 {
@@ -205,6 +205,7 @@ prog_char content_config[] PROGMEM = "<HTML><BODY>Arduino config.html<hr>"
                          "Set time:<input name=\"ch\" value=\"12\" size=\"2\">"
                          ":<input name=\"cm\" value=\"0\" size=\"2\"><br>"
                          "Day(0-7):<input name=\"cd\" value=\"0\" size=\"2\"><br>"
+                         "Timebase:<input name=\"cb\" value=\"1000000\" size=\"7\"><br>"
                          "<button>Set</button></form>"
                          "</BODY></HTML>\r\n";
 
@@ -299,6 +300,7 @@ int page_c2ct(int ch_id, char* URL)
   char* r_hour=strstr(Params,"ch=")+3;
   char* r_min=strstr(Params,"cm=")+3;
   char* r_day=strstr(Params,"cd=")+3;
+  char* r_base=strstr(Params,"cb=")+3;
 
   if (strstr(r_min,"&"))
     *(strstr(r_min,"&")) = 0;
@@ -306,10 +308,19 @@ int page_c2ct(int ch_id, char* URL)
     *(strstr(r_hour,"&")) = 0;
   if (strstr(r_day,"&"))
     *(strstr(r_day,"&")) = 0;
+  if (strstr(r_base,"&"))
+    *(strstr(r_base,"&")) = 0;
 
+  if (r_base) {
+    sscanf(r_base, "%ld", &t_usPerSec );
+    if (eeprom_unlock)
+      write_eeprom();
+  }
+  
   sscanf(r_min, "%d", &minutes );
   sscanf(r_hour, "%d", &hours );
   sscanf(r_day, "%d", &days );
+
   seconds=0;
   
 #ifdef SERV_DEBUG  
@@ -319,6 +330,8 @@ int page_c2ct(int ch_id, char* URL)
   Serial.println(minutes);
   Serial.print("Day:");
   Serial.println(days);
+  Serial.print("Base:");
+  Serial.println(t_usPerSec);
 #endif
 
   return response_send_progmem(ch_id, content_c2ct, sizeof(content_c2ct));  

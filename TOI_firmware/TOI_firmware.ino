@@ -1,26 +1,28 @@
 /*
- * This file is part of esp_webserver.
+ * This file is part of TOI_firmware.
  *
  * Copyright (C) 2015  D.Herrendoerfer
  *
- *   uCNC_controller is free software: you can redistribute it and/or modify
+ *   TOI_firmware is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
- *   uCNC_controller is distributed in the hope that it will be useful,
+ *   TOI_firmware is distributed in the hope that it will be useful,
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with uCNC_controller.  If not, see <http://www.gnu.org/licenses/>.
+ *   along with TOI_firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 //#define INFO_DEBUG 1
 
 #include <stdlib.h>
 
+/* Needed for Arduino UNO, Mini, Nano, etc...  
+    comment out for Mega or ADK        */
 #include <SoftwareSerial.h>
 SoftwareSerial Serial1(10,11);
 
@@ -36,7 +38,7 @@ int  e_AP       = 0;
 int  e_ENC      = 0;
 int  e_CHAN     = 10;
 
-int t_MsPerSec  = 1000;
+long t_usPerSec  = 993300;
 
 #define APSSID "TOI_Default"
 #define APPASS ""
@@ -73,7 +75,8 @@ void setup()
 }
 
 unsigned long time;
-unsigned long next_ms_seconds = millis()+t_MsPerSec;
+unsigned long utime;
+unsigned long next_us_seconds = micros()+t_usPerSec;
 unsigned int seconds = 0;
 unsigned int minutes = 0;
 unsigned int hours = 0;
@@ -109,14 +112,15 @@ void loop() {
  
   while (!shutdown) {
     time = millis();
+    utime = micros();
 
     if (Serial1.available() > 0) {
       /* Call the server service routine if there is data */
       esp_poll();
     }
     
-    if ( (long)(time - next_ms_seconds) >= 0 ) {
-      next_ms_seconds += t_MsPerSec;
+    if ( (long)(utime - next_us_seconds) >= 0 ) {
+      next_us_seconds += t_usPerSec;
       seconds++;
       if (seconds > 59) {
         seconds = 0;

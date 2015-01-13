@@ -15,11 +15,11 @@ wifi network, or within an existing one.
 Installation:
 -------------
 
-The firmware is curently made for the Arduino MEGA board, with the ESP8266
-connected to the Serial1 port (I/O 18,19), or the Arduino Uno using I/O pin
+The firmware supports Arduino MEGA, UNO, Mini, Nano (and more) boards, with 
+an ESP8266 module connected to the Serial1 port (I/O 18,19),  I/O pin
 10 and 11 for SoftwareSerial.
 To compile and build this, the Arduino 1.0.6 IDE (or higher version) is
-required. 
+recommended (but no longer requred).  
 
 Usage:
 ------
@@ -41,7 +41,10 @@ IO pin 12 connected to GND.
 
 Version History
 ---------------
-
+2015/01/13 no version     - clean up license statements, add license file
+                          - remove day 7 (blernsday) of the week now back to 0-6
+                          - save clock micros per second value to eeprom
+                          - start work on real http-get function
 2015/01/08 no version     - big rework, all static docs now in progmem
                           - removed all use of String class
                           - also works with Uno, Nano, and Mini (needs 3.3V supply)
