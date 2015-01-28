@@ -138,18 +138,35 @@ int send_ipdata_fin(char* data)
   return send_expect(data,"OK\r\n",5000);
 }
 
-int http_req_get(char* host,   char* URL, char* resp_buffer, int buffer_length)
+/*
+int http_req_get(char* host, int port, char* URL, char* resp_buffer, int buffer_length)
 {
+  int ch_id=2;
+  
   //open connection
+  connect_host(ch_id, host, port);  
   
   //send request
+  send_ipdata_head(ch_id, "GET " , strlen(URL)+17);
+  send_ipdata(URL);
+  send_ipdata_fin(" HTTP/1.1\r\n\r\n");
   
   //wait for response
   
+  if (expect("+IPD"))
+    return 1;
+  if (expect("200"))
+    return 1;
+  
   //receive return document
+  if (expect("\r\n\r\n"))
+    return 1;
+  
+  
   
   return 0;
 }
+*/
 
 int buffer_position = 0;
 int timeout_count = 0;

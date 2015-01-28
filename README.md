@@ -41,12 +41,19 @@ IO pin 12 connected to GND.
 
 Version History
 ---------------
+2015/01/28 no version     - more clean-up
+                          - seperate service and user application web pages
+                          - add stream type http response (no doc-size given)
+                          - continue work on http get function 
+
 2015/01/13 no version     - clean up license statements, add license file
                           - remove day 7 (blernsday) of the week now back to 0-6
                           - save clock micros per second value to eeprom
                           - start work on real http-get function
+                          
 2015/01/08 no version     - big rework, all static docs now in progmem
                           - removed all use of String class
                           - also works with Uno, Nano, and Mini (needs 3.3V supply)
                           - added clock. More comments
+                          
 2015/01/05 no version yet - first commit of alpha

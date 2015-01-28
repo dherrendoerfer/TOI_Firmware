@@ -17,7 +17,7 @@
  *   along with TOI_firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define SERV_DEBUG 1
+//#define SERV_DEBUG 1
 
 int request_get( char* ip_buffer, int length)
 {
@@ -40,9 +40,10 @@ int request_get( char* ip_buffer, int length)
   Serial.println(length);
 #endif
 
-  if (strcmp(URL,"/index.html") == 0 || strcmp(URL,"/") == 0) {
-    /* index page */
-    return page_index(ch_id, URL);
+  if (!myAppHandleURL(URL, ch_id)) {
+    /* Request was handeled/caught by myApp code
+       don't handle any further. */
+    return 0;
   }
 
   /* 
@@ -98,13 +99,35 @@ prog_char header[] PROGMEM = "HTTP/1.1 200 OK\r\n"
 
 int response_head(int ch_id, int length)
 {
-
   int len = sizeof(header) + intLen(length) + 4;
 
   send_ipdata_head(ch_id, "", len);
   send_progmem_data((char*)header, sizeof(header));
   send_ipdata(length);
   return  send_ipdata_fin("\r\n\r\n");
+}
+
+prog_char stream_header[] PROGMEM = "HTTP/1.1 200 OK\r\n" 
+                        "Content-Type: text/html\r\n"
+                        "Connection: close\r\n\r\n";
+
+int stream_head(int ch_id)
+{
+  send_ipdata_head(ch_id, "", sizeof(stream_header));
+  send_progmem_data((char*)stream_header, sizeof(stream_header));
+  return send_ipdata_fin("");
+}
+
+int stream_send(int ch_id, char* data)
+{
+  send_ipdata_head(ch_id,data, strlen(data));
+  send_ipdata_fin("");
+}
+
+int stream_send(int ch_id, char* data, int length)
+{
+  send_ipdata_head(ch_id,data, length);
+  send_ipdata_fin("");
 }
 
 int response_send_simple(int ch_id, char* content, int length)
@@ -353,14 +376,6 @@ int page_cdate(int ch_id, char* URL)
 /*********************************************************************************************** 
 *        END OF BUILT-IN Functions and html pages 
 */
-/*********************************************************************************************** 
-*  index.html 
-*/
-prog_char content_index[] PROGMEM =  "<HTML><BODY>index.html<hr>the default page<p>"
-                          "</BODY></HTML>\r\n";
-  
-int page_index(int ch_id, char* URL) {
-  return response_send_progmem(ch_id, content_index, sizeof(content_index));  
-}
+
 
 

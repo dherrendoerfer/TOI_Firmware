@@ -51,13 +51,10 @@ void read_eeprom()
   e_ENC  = EEPROM.read(byte++);
   e_CHAN = EEPROM.read(byte++);
 
-  t_usPerSec  = EEPROM.read(byte++);
-  t_usPerSec += (EEPROM.read(byte++) << 8) & 0xff00;
-  t_usPerSec += (long)(EEPROM.read(byte++) << 16) & 0xff0000;
-  t_usPerSec += (long)(EEPROM.read(byte++) << 24) & 0xff000000;
-  
-  Serial.println(t_usPerSec);
-
+  t_usPerSec  = (long)EEPROM.read(byte++);
+  t_usPerSec += ((long)EEPROM.read(byte++) << 8 ) & 0xff00;
+  t_usPerSec += ((long)EEPROM.read(byte++) << 16) & 0xff0000;
+  t_usPerSec += ((long)EEPROM.read(byte++) << 24) & 0xff000000;
 }
 
 void write_eeprom()
@@ -84,5 +81,8 @@ void write_eeprom()
   
   EEPROM.write(0,42);
   EEPROM.write(1,42);
+  
+  /* Call app-specific eeprom management code */
+  eeprom_event();
 }
 

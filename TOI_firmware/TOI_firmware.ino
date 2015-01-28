@@ -38,7 +38,7 @@ int  e_AP       = 0;
 int  e_ENC      = 0;
 int  e_CHAN     = 10;
 
-long t_usPerSec  = 993300;
+long t_usPerSec  = 993250;
 
 #define APSSID "TOI_Default"
 #define APPASS ""
@@ -72,6 +72,9 @@ void setup()
     read_eeprom();
     defaultAP = 0;
   }
+  
+  /* Execute app-specific init cod. */
+  app_init();
 }
 
 unsigned long time;
@@ -83,7 +86,6 @@ unsigned int hours = 0;
 unsigned int days = 0;
 
 void loop() {
-
   /* Start up Wifi */
   if (!send_expect("AT","OK\r\n",500)){
     if (defaultAP)
@@ -119,6 +121,12 @@ void loop() {
       esp_poll();
     }
     
+    /* The clock code:
+     * This provides a simple running clock time with a 
+     * day of the week counter. Because the Arduino quarz
+     * clock is almost always off by a few percent the clock
+     * is synchronized with the micros() call and a presettable
+     * value for elimination of drift. (t_usPerSec)  */
     if ( (long)(utime - next_us_seconds) >= 0 ) {
       next_us_seconds += t_usPerSec;
       seconds++;
@@ -131,7 +139,7 @@ void loop() {
           if (hours > 23) {
             hours = 0;
             days++;
-            if (days > 7) {
+            if (days > 6) {
               days = 0;
             }
           }
@@ -141,7 +149,19 @@ void loop() {
       /*Hearteat LED*/
       digitalWrite(13, seconds % 2);
     }
-  }
+    
+    /* Space for aditional code:
+     * If you want to extend the code with your own functions
+     * that should run periodically, below here is the place to
+     * put it. */
+    
+    /* Call app-specific loop code */
+    tick();
+
+  }  /* End of the main loop */
+
+  /* Call app-specific shutdown code */
+  shutdown_event();
   
   while (!reboot)
   {
