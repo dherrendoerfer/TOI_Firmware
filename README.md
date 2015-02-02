@@ -41,6 +41,10 @@ IO pin 12 connected to GND.
 
 Version History
 ---------------
+2015/02/02 no version     - rewrite handler functions
+                          - fix to make the ESP8266 become more stable
+                          - added lots of ESP8266 functions
+
 2015/01/28 no version     - more clean-up
                           - seperate service and user application web pages
                           - add stream type http response (no doc-size given)

@@ -98,6 +98,22 @@ int stop_server(int port)
   return expect("OK\r\n",1000);
 }
 
+int reset()
+{
+  return send_expect("AT+RST","ready\r\n",2000);
+}
+
+int set_echo()
+{
+  return send_expect("ATE1","OK\r\n",1000);
+}
+
+int unset_echo()
+{
+  return send_expect("ATE0","OK\r\n",1000);
+}
+
+
 int set_multicon()
 {
   return send_expect("AT+CIPMUX=1","OK\r\n",1000);
@@ -133,9 +149,9 @@ void send_ipdata(int data )
   send(data);
 }
 
-int send_ipdata_fin(char* data)
+int send_ipdata_fin()
 {
-  return send_expect(data,"OK\r\n",5000);
+  return expect("SEND OK\r\n",5000);
 }
 
 /*

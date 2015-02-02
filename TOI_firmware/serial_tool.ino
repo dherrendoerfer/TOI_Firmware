@@ -16,14 +16,42 @@
  *   You should have received a copy of the GNU General Public License
  *   along with TOI_firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+/*Uncomment this to see all serial traffic*/ 
 //#define SER_DEBUG 1
+/*Uncomment this to see serial errors*/ 
+//#define SER_ERROR 1
+
+int find(char* str, int timeout)
+{
+  unsigned long end = millis() + timeout;
+  int sp = 0;
+  char tmp;
+  
+  while ( (long)(millis() - end ) < 0) {
+    if (Serial1.available() > 0){
+      tmp = Serial1.read();
+      
+#ifdef SER_DEBUG
+      Serial.print(tmp);
+#endif      
+      if (str[sp] == tmp){
+        sp++;
+        if (sp == strlen(str)){
+          return 1;
+        }
+      } else {
+        sp=0;
+      }
+    }
+  }
+  return 0;
+}
 
 int expect(char* expectstr, int timeout) 
 {
-  Serial1.setTimeout(timeout); 
-  
-  if(Serial1.find(expectstr)){
+//  Serial1.setTimeout(timeout); 
+  if(find(expectstr,5000)){
 #ifdef SER_DEBUG
     Serial.print("RECEIVED: ");
     Serial.println(expectstr);
@@ -31,10 +59,30 @@ int expect(char* expectstr, int timeout)
     return 0;
   } 
 
-#ifdef SER_DEBUG
+#if defined SER_DEBUG || SER_ERROR
   Serial.print("ERROR DID NOT RECEIVE: ");
   Serial.println(expectstr);
 #endif
+
+  /*Check if the ESP8266 is stuck */
+  Serial1.print("AT\r\n");
+  if (!find("OK\r\n",2000)){
+#if defined SER_DEBUG || SER_ERROR
+    Serial.println("ERROR, ESP STUCK: ");
+#endif
+    Serial1.print("\r\nAT\r\n");
+    if (!find("OK\r\n",2000)){
+#if defined SER_DEBUG || SER_ERROR
+      Serial.println("ERROR, ESP still STUCK: ");
+#endif
+    } else {
+      reinit = 1;
+#if defined SER_DEBUG || SER_ERROR
+      Serial.println("RECOVER, ESP DID RESPOND. ");
+#endif
+    }
+  }
+
   return 1;
 }
 
@@ -144,10 +192,5 @@ int serial_read(char* buffer, int offset, int length)
       break;
   }
 
-//  if ( count ) {  
-//    Serial.println();
-//    Serial.print("At:" );
-//    Serial.println(count);
-//  }
   return count;
 }

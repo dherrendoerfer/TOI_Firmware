@@ -38,7 +38,7 @@ int  e_AP       = 0;
 int  e_ENC      = 0;
 int  e_CHAN     = 10;
 
-long t_usPerSec  = 993250;
+long t_usPerSec  = 1000000;
 
 #define APSSID "TOI_Default"
 #define APPASS ""
@@ -51,6 +51,7 @@ char input_buffer[BUFFER_SIZE];
 int shutdown = 0;
 int reboot   = 0;
 int defaultAP = 1;
+int reinit = 0;
 
 void setup()
 {
@@ -73,8 +74,9 @@ void setup()
     defaultAP = 0;
   }
   
-  /* Execute app-specific init cod. */
+  /* Execute app-specific init code. */
   app_init();
+
 }
 
 unsigned long time;
@@ -85,18 +87,32 @@ unsigned int minutes = 0;
 unsigned int hours = 0;
 unsigned int days = 0;
 
-void loop() {
+void init_wifi() 
+{
+  if (defaultAP)
+    connectAP(APSSID, APPASS, APCHAN, APENC);
+  else {
+    if (!e_AP) {
+      connectWiFi(e_SSID, e_PASS);
+    } else {
+      connectAP(e_SSID, e_PASS, e_CHAN, e_ENC);
+    }
+  }
+  
+#ifdef INFO_DEBUG  
+  send_dump("AT+CIFSR");
+#endif
+  
+  unset_echo();
+  set_multicon();
+  setup_server(80);
+}
+
+void loop() 
+{
   /* Start up Wifi */
   if (!send_expect("AT","OK\r\n",500)){
-    if (defaultAP)
-      connectAP(APSSID, APPASS, APCHAN, APENC);
-    else {
-      if (!e_AP) {
-        connectWiFi(e_SSID, e_PASS);
-      } else {
-        connectAP(e_SSID, e_PASS, e_CHAN, e_ENC);
-      }
-    }
+    init_wifi();
   } else {
 #ifdef INFO_DEBUG
     Serial.println(F("No response from ESP8266 will retry in 60s."));
@@ -105,12 +121,6 @@ void loop() {
     return;
   }
 
-#ifdef INFO_DEBUG  
-  send_dump("AT+CIFSR");
-#endif
-
-  set_multicon();
-  setup_server(80);
  
   while (!shutdown) {
     time = millis();
@@ -148,18 +158,29 @@ void loop() {
       
       /*Hearteat LED*/
       digitalWrite(13, seconds % 2);
+
+#ifdef INFO_DEBUG  
+      if ( seconds == 59){
+        setup_server(80);
+        send_dump("AT+CIFSR");
+      }
+#endif
     }
     
-    /* Space for aditional code:
+    if (reinit == 1) {
+      reinit = 0;
+      init_wifi();
+    }
+    
+    /*Space for aditional code:
      * If you want to extend the code with your own functions
      * that should run periodically, below here is the place to
      * put it. */
-    
-    /* Call app-specific loop code */
+  
     tick();
 
   }  /* End of the main loop */
-
+  
   /* Call app-specific shutdown code */
   shutdown_event();
   

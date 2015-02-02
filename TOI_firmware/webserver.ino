@@ -51,32 +51,38 @@ int request_get( char* ip_buffer, int length)
    */
   if (strcmp(URL,"/arduino.html") == 0 ){
     /* arduino page */
-    return page_arduino(ch_id, URL);
+    page_arduino(ch_id, URL);
+    return 0;
   }
 
   if (strstr(URL,"/reboot.html?") == URL) {
     /* reboot page */
-    return page_reboot(ch_id, URL);
+    page_reboot(ch_id, URL);
+    return 0;
   }
 
   if (strcmp(URL,"/config.html") == 0) {
     /* config page */
-    return page_config(ch_id, URL);
+    page_config(ch_id, URL);
+    return 0;
   }
 
   if (strstr(URL,"/c2ee.html?") == URL) {
     /* connfig save page */
-    return page_c2ee(ch_id, URL);
+    page_c2ee(ch_id, URL);
+    return 0;
   }
 
   if (strstr(URL,"/c2ct.html?") == URL) {
     /* time save page */
-    return page_c2ct(ch_id, URL);
+    page_c2ct(ch_id, URL);
+    return 0;
   }
 
   if (strcmp(URL,"/cdate.html") == 0) {
     /* show time page */
-    return page_cdate(ch_id, URL);
+    page_cdate(ch_id, URL);
+    return 0;
   }
 
   response_404(ch_id);
@@ -99,12 +105,20 @@ prog_char header[] PROGMEM = "HTTP/1.1 200 OK\r\n"
 
 int response_head(int ch_id, int length)
 {
-  int len = sizeof(header) + intLen(length) + 4;
+  /*Important note: sizeof() is 1 larger than strlen() would be
+    but when using PROGMEM sizeof is required                   */
+  int len = sizeof(header)-1 + intLen(length) + 4;
 
-  send_ipdata_head(ch_id, "", len);
+  if (send_ipdata_head(ch_id, "", len)) {
+    close_channel(ch_id);
+    return 1;
+  }
+
   send_progmem_data((char*)header, sizeof(header));
   send_ipdata(length);
-  return  send_ipdata_fin("\r\n\r\n");
+  send_ipdata("\r\n\r\n");
+  
+  return send_ipdata_fin();
 }
 
 prog_char stream_header[] PROGMEM = "HTTP/1.1 200 OK\r\n" 
@@ -113,36 +127,52 @@ prog_char stream_header[] PROGMEM = "HTTP/1.1 200 OK\r\n"
 
 int stream_head(int ch_id)
 {
-  send_ipdata_head(ch_id, "", sizeof(stream_header));
+  /*Important note: sizeof() is 1 larger than strlen() would be
+    but when using PROGMEM sizeof is required                   */
+  if (send_ipdata_head(ch_id, "", sizeof(stream_header)-1))
+    return 1;
   send_progmem_data((char*)stream_header, sizeof(stream_header));
-  return send_ipdata_fin("");
+  
+  return send_ipdata_fin();
 }
 
 int stream_send(int ch_id, char* data)
 {
-  send_ipdata_head(ch_id,data, strlen(data));
-  send_ipdata_fin("");
+  if (send_ipdata_head(ch_id,data, strlen(data)))
+    return 1;
+  return send_ipdata_fin();
 }
 
 int stream_send(int ch_id, char* data, int length)
 {
-  send_ipdata_head(ch_id,data, length);
-  send_ipdata_fin("");
+  if (send_ipdata_head(ch_id,data, length))
+    return 1;
+  return send_ipdata_fin();
 }
 
 int response_send_simple(int ch_id, char* content, int length)
 {
   if (response_head(ch_id,length))
-    return 1;
+    goto err_out;
     
-  send_ipdata_head(ch_id, content, length);
-  return send_ipdata_fin("");
+  if (send_ipdata_head(ch_id, content, length))
+    goto err_out;
+    
+  if (send_ipdata_fin())
+    goto err_out;
+  
+  return 0;
+  
+  err_out:
+  close_channel(ch_id);
+  return 1;
+
 }
 
 void send_progmem_data(PGM_P content, int length) 
 {
   char tmp[] = "a"; 
-  for ( int i=0; i<length; i++ ) {
+  for ( int i=0; i<length-1; i++ ) {
     tmp[0] =  pgm_read_byte(content++);
     send_ipdata(tmp);
   }
@@ -150,12 +180,21 @@ void send_progmem_data(PGM_P content, int length)
 
 int response_send_progmem(int ch_id, PGM_P content, int length)
 {
-  if (response_head(ch_id,length))
-    return 1;
-  send_ipdata_head(ch_id, "", length);
+  if (response_head(ch_id,length-1))
+    goto err_out;
+  if (send_ipdata_head(ch_id, "", length-1))
+    goto err_out;
+
   send_progmem_data(content, length);
   
-  return send_ipdata_fin("");
+  if (send_ipdata_fin())
+    goto err_out;
+  
+  return 0;
+  
+  err_out:
+  close_channel(ch_id);
+  return 1;
 }
 
 prog_char error_404[] PROGMEM = "HTTP/1.1 404 ERROR\r\n"
@@ -164,12 +203,21 @@ prog_char error_404[] PROGMEM = "HTTP/1.1 404 ERROR\r\n"
                         "Content-Length: 9\r\n\r\n"
                         "Error 404";
 
-int response_404(int ch_id)
+void response_404(int ch_id)
 {
-  send_ipdata_head(ch_id,"" , sizeof(error_404));
+  if (send_ipdata_head(ch_id,"" , sizeof(error_404)-1))
+    goto err_out;
+
   send_progmem_data((char*)error_404, sizeof(error_404));
 
-  return  send_ipdata_fin("");
+  if (send_ipdata_fin())
+    goto err_out;
+
+  return;
+  
+  err_out:
+  close_channel(ch_id);
+  return;
 }
 
 /*********************************************************************************************** 
@@ -182,8 +230,8 @@ prog_char content_arduino[] PROGMEM =  "<HTML><BODY>arduino.html<hr>Built-in pag
                           "<a href=reboot.html?default>default settings</a>"
                           "</BODY></HTML>\r\n";
   
-int page_arduino(int ch_id, char* URL) {
-  return response_send_progmem(ch_id, content_arduino, sizeof(content_arduino));  
+void page_arduino(int ch_id, char* URL) {
+  response_send_progmem(ch_id, content_arduino, sizeof(content_arduino));
 }
 
 /*********************************************************************************************** 
@@ -191,9 +239,10 @@ int page_arduino(int ch_id, char* URL) {
 */
 prog_char content_reboot[] PROGMEM = "<HTML><BODY>Arduino reboot.html<hr>will shutdown/reboot to selected settings</BODY></HTML>\r\n";
 
-int page_reboot(int ch_id, char* URL)
+void page_reboot(int ch_id, char* URL)
 {
-  response_send_progmem(ch_id, (char*)content_reboot, sizeof(content_reboot));  
+  if (response_send_progmem(ch_id, (char*)content_reboot, sizeof(content_reboot)))
+    return;
 
   if (strstr(URL,"?default")) {
     invalidate_eeprom();
@@ -209,6 +258,8 @@ int page_reboot(int ch_id, char* URL)
   }
   
   shutdown=1;
+  
+  return;
 }
 
 /*********************************************************************************************** 
@@ -232,10 +283,10 @@ prog_char content_config[] PROGMEM = "<HTML><BODY>Arduino config.html<hr>"
                          "<button>Set</button></form>"
                          "</BODY></HTML>\r\n";
 
-int page_config(int ch_id, char* URL)
+void page_config(int ch_id, char* URL)
 {
   eeprom_unlock=1;  
-  return response_send_progmem(ch_id, content_config, sizeof(content_config));  
+  response_send_progmem(ch_id, content_config, sizeof(content_config));
 }
 
 /*********************************************************************************************** 
@@ -243,7 +294,7 @@ int page_config(int ch_id, char* URL)
 */
 prog_char content_c2ee[] PROGMEM = "<HTML><BODY>SAVE<hr>OK<p><a href=reboot.html?reboot>reboot</a></BODY></HTML>\r\n";
 
-int page_c2ee(int ch_id, char* URL)
+void page_c2ee(int ch_id, char* URL)
 {
   char* Params = strstr(URL,"?")+1;
 
@@ -302,8 +353,8 @@ int page_c2ee(int ch_id, char* URL)
     write_eeprom();
     defaultAP = 0;
   }
-  
-  return response_send_progmem(ch_id, content_c2ee, sizeof(content_c2ee));  
+
+  response_send_progmem(ch_id, content_c2ee, sizeof(content_c2ee));
 }
 
 /*********************************************************************************************** 
@@ -311,7 +362,7 @@ int page_c2ee(int ch_id, char* URL)
 */
 prog_char content_c2ct[] PROGMEM = "<HTML><BODY>TIME SET<hr><p><a href=index.html>Home</a></BODY></HTML>\r\n";
 
-int page_c2ct(int ch_id, char* URL)
+void page_c2ct(int ch_id, char* URL)
 {
   char* Params = strstr(URL,"?")+1;
 
@@ -357,19 +408,19 @@ int page_c2ct(int ch_id, char* URL)
   Serial.println(t_usPerSec);
 #endif
 
-  return response_send_progmem(ch_id, content_c2ct, sizeof(content_c2ct));  
+  response_send_progmem(ch_id, content_c2ct, sizeof(content_c2ct));
 }
 
 /*********************************************************************************************** 
 *  cdate.html 
 */
-int page_cdate(int ch_id, char* URL)
+void page_cdate(int ch_id, char* URL)
 {
   char buffer[80];
   
   sprintf(buffer,"<HTML><BODY>%02i:%02i:%02i on day %i</BODY></HTML>\r\n",hours,minutes,seconds,days);
     
-  return response_send_simple(ch_id, buffer, strlen(buffer)+1);  
+  response_send_simple(ch_id, buffer, strlen(buffer));
 }
 
 
