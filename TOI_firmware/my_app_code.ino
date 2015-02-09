@@ -50,7 +50,8 @@ int myAppHandleURL(char* URL, int ch_id)
 {
   if (strcmp(URL,"/index.html") == 0 || strcmp(URL,"/") == 0) {
     /* index page */
-    return page_index(ch_id, URL);
+    page_index(ch_id, URL);
+    return 0;
   }
 
   return 1;
@@ -63,6 +64,6 @@ int myAppHandleURL(char* URL, int ch_id)
 prog_char content_index[] PROGMEM =  "<HTML><BODY>index.html<hr>the default page<p>"
                           "</BODY></HTML>\r\n";
   
-int page_index(int ch_id, char* URL) {
+void page_index(int ch_id, char* URL) {
   return response_send_progmem(ch_id, content_index, sizeof(content_index));  
 }
