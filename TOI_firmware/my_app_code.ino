@@ -65,5 +65,5 @@ prog_char content_index[] PROGMEM =  "<HTML><BODY>index.html<hr>the default page
                           "</BODY></HTML>\r\n";
   
 void page_index(int ch_id, char* URL) {
-  return response_send_progmem(ch_id, content_index, sizeof(content_index));  
+  response_send_progmem(ch_id, content_index, sizeof(content_index));  
 }
