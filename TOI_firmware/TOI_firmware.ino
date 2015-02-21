@@ -26,11 +26,20 @@
 #include <SoftwareSerial.h>
 SoftwareSerial Serial1(10,11);
 
+/* log_mute will mute the next log of the
+   serial read. Use for time-critical handling
+   where logging would break time constraints. */
+int log_mute = 0;
+
 #define HEARTBEAT_LED 13
 #define RESET_PIN     12
 
 #define SSID "DefaultSsid"
 #define PASS "DefaultPass"
+
+/* Pre-defined for the use of get_ip() 
+*/
+char IP[32]="000.000.000.000";
 
 char e_SSID[32] = SSID;
 char e_PASS[32] = PASS;
@@ -89,6 +98,8 @@ unsigned int days = 0;
 
 void init_wifi() 
 {
+  unset_echo();
+  
   if (defaultAP)
     connectAP(APSSID, APPASS, APCHAN, APENC);
   else {
@@ -98,12 +109,16 @@ void init_wifi()
       connectAP(e_SSID, e_PASS, e_CHAN, e_ENC);
     }
   }
+
+//  send_expect("AT+CWLAP","OK\r\n",10000);
+//  send_expect("AT+CWJAP?","OK\r\n",10000);
+
+  get_ip(IP,sizeof(IP));
   
 #ifdef INFO_DEBUG  
   send_dump("AT+CIFSR");
 #endif
   
-  unset_echo();
   set_multicon();
   setup_server(80);
 }
@@ -120,7 +135,6 @@ void loop()
     delay(60000);
     return;
   }
-
  
   while (!shutdown) {
     time = millis();
@@ -161,7 +175,6 @@ void loop()
 
 #ifdef INFO_DEBUG  
       if ( seconds == 59){
-        setup_server(80);
         send_dump("AT+CIFSR");
       }
 #endif

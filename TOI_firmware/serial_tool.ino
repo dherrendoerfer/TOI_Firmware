@@ -22,22 +22,30 @@
 /*Uncomment this to see serial errors*/ 
 //#define SER_ERROR 1
 
-int find(char* str, int timeout)
+int find(char* str, unsigned long timeout, char* buffer, int buflen)
 {
   unsigned long end = millis() + timeout;
   int sp = 0;
+  int bufptr = 0; 
   char tmp;
   
   while ( (long)(millis() - end ) < 0) {
     if (Serial1.available() > 0){
       tmp = Serial1.read();
       
+      if (buffer && bufptr < buflen - 1) {
+        buffer[bufptr++] = tmp;
+        buffer[bufptr] = 0;
+      }
+
 #ifdef SER_DEBUG
-      Serial.print(tmp);
+      if (!log_mute)
+        Serial.print(tmp);
 #endif      
       if (str[sp] == tmp){
         sp++;
         if (sp == strlen(str)){
+          log_mute = 0;
           return 1;
         }
       } else {
@@ -45,13 +53,16 @@ int find(char* str, int timeout)
       }
     }
   }
+#ifdef SER_DEBUG
+  Serial.print("\r\nTimeout\r\n");
+#endif      
+  log_mute = 0;
   return 0;
 }
 
-int expect(char* expectstr, int timeout) 
+int expect(char* expectstr, unsigned int timeout) 
 {
-//  Serial1.setTimeout(timeout); 
-  if(find(expectstr,5000)){
+  if(find(expectstr, timeout, 0, 0)){
 #ifdef SER_DEBUG
     Serial.print("RECEIVED: ");
     Serial.println(expectstr);
@@ -66,12 +77,12 @@ int expect(char* expectstr, int timeout)
 
   /*Check if the ESP8266 is stuck */
   Serial1.print("AT\r\n");
-  if (!find("OK\r\n",2000)){
+  if (!find("OK\r\n",2000,0,0)){
 #if defined SER_DEBUG || SER_ERROR
     Serial.println("ERROR, ESP STUCK: ");
 #endif
     Serial1.print("\r\nAT\r\n");
-    if (!find("OK\r\n",2000)){
+    if (!find("OK\r\n",2000,0,0)){
 #if defined SER_DEBUG || SER_ERROR
       Serial.println("ERROR, ESP still STUCK: ");
 #endif
@@ -82,7 +93,6 @@ int expect(char* expectstr, int timeout)
 #endif
     }
   }
-
   return 1;
 }
 
@@ -107,6 +117,19 @@ int send_expect(String sendstr, char* expectstr, int timeout)
   
   return expect(expectstr, timeout);
 }
+
+int send_expect_read(char* sendstr, char* expectstr, int timeout, char* buffer, int buflen) 
+{
+  Serial1.println(sendstr);
+#ifdef SER_DEBUG
+  Serial.print("Sent: ");
+  Serial.println(sendstr);  
+  Serial.println("Read<-");
+#endif
+  
+  return find(expectstr,timeout,buffer,buflen);
+}
+
 
 void send(char* sendstr) 
 {

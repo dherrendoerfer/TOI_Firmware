@@ -19,10 +19,21 @@
 
 //#define APP_DEBUG 1
 
+// include the library code:
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd( A3, 2, 3, 4, 5, 6);
+
+
+long sectics = 0;
+
 /* My-App specific init */
 void app_init()
 {
-
+   pinMode(A3, OUTPUT);
+   lcd.begin(16, 2);
+   
+   lcd.print("TOI_fw v0.10a");
 }
 
 /* My-App specific URL handlers
@@ -66,7 +77,7 @@ int myAppHandleURL(char* URL, int ch_id)
    Note: a reboot or shutdown is in progress */
 void shutdown_event()
 {
-
+  sectics = 0;
 }
 
 /* My-App specific eeprom code 
@@ -76,16 +87,41 @@ void eeprom_event()
 
 }
 
+  
 int tick()
-{
-  if(time % 500 == 0) {
-    // 500ms interval
-/*
-    for (int i=0; i<4; i++) {
-      int val = analogRead(A3);
-      temp_sensors[i] = (int)(u2totemp(val) *100);
+{ 
+  if ( seconds == 9 || seconds == 39) {
+    char tmp[64];
+    if (http_req_get("192.168.178.8", 80, "/test.html", tmp, 96)) {
+      lcd.setCursor(0, 1);
+      lcd.print("                ");
+      return 0; 
     }
-*/    
+
+    if (tmp[strlen(tmp)-1] == '\n')
+      tmp[strlen(tmp)-1] = 0;
+      
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    lcd.setCursor(0, 1);
+    lcd.print(tmp);
+  }
+
+  if ( millis() % 1000 == 0) {
+    char tmp[64];
+    sprintf(tmp, "%02d:%02d:%02d",hours,minutes,seconds);
+    
+    lcd.setCursor(0, 0);
+    lcd.print("                ");
+    lcd.setCursor(0, 0);
+    lcd.print(tmp);
+    
+    if (sectics++ < 30) {
+      lcd.setCursor(0, 1);
+      lcd.print("                ");
+      lcd.setCursor(0, 1);
+      lcd.print(IP);
+    }
   }
 }
 
@@ -128,6 +164,9 @@ void page_analog(int ch_id, char* URL) {
   sprintf(buf,"Analog:");
   
   for (int i=0; i<8; i++) {
+    // Skip A3 (Used by LCD)
+    if (i==3)
+      continue;
     if (i<7)
       sprintf(buf, "%s%d,",buf,analogRead(i));
     else
@@ -154,7 +193,7 @@ void page_digital(int ch_id, char* URL) {
 
   sprintf(buf,"Digital:");
   
-  for (int i=2; i<10; i++) {
+  for (int i=7; i<10; i++) {
     if (i<9)
       sprintf(buf, "%s%d,",buf,digitalRead(i));
     else
@@ -188,7 +227,7 @@ void page_output(int ch_id, char* URL) {
     return;  
   }
 
-  for (int i=2; i<10; i++) {
+  for (int i=7; i<10; i++) {
     sprintf(buf, "PIN: %d : value: %d  <a href=oset.html?ch=%d&st=1>ON</a>;<a href=oset.html?ch=%d&st=0>OFF</a><br>",i,outvalues[i],i,i);
     if (stream_send(ch_id, buf)) {
       close_channel(ch_id);

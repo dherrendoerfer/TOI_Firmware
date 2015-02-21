@@ -86,7 +86,7 @@ int close_channel(int ch_id)
   send(ch_id);
   send("\r\n");
 
-  return expect("OK\r\n",1000);
+  return !find("OK\r\n",1000,0,0);
 }
 
 int stop_server(int port)
@@ -96,6 +96,22 @@ int stop_server(int port)
   send("\r\n");
 
   return expect("OK\r\n",1000);
+}
+
+int get_ip(char* ip, int len)
+{
+  if (!send_expect_read("AT+CIFSR","OK\r\n",1000,ip,len))
+    return 1; 
+  
+  if (strstr(ip,"\r\n"))
+    *(strstr(ip,"\r\n")) = 0;
+  
+#ifdef ESP_DEBUG
+  Serial.print("IP:");
+  Serial.println(ip);
+#endif
+
+  return 0;
 }
 
 int reset()
@@ -112,7 +128,6 @@ int unset_echo()
 {
   return send_expect("ATE0","OK\r\n",1000);
 }
-
 
 int set_multicon()
 {
@@ -154,35 +169,68 @@ int send_ipdata_fin()
   return expect("SEND OK\r\n",5000);
 }
 
-/*
+/* Note: This function is beta, it may not perform well with all
+*        available web servers. 
+*/
 int http_req_get(char* host, int port, char* URL, char* resp_buffer, int buffer_length)
 {
   int ch_id=2;
   
-  //open connection
-  connect_host(ch_id, host, port);  
+  // open connection
+  if (connect_host(ch_id, host, port))
+    return 1;  
+  // wait until the connection is established
+  if (!find("Linked\r\n",5000,resp_buffer,buffer_length))
+    return 1;
   
-  //send request
+  // send request
   send_ipdata_head(ch_id, "GET " , strlen(URL)+17);
   send_ipdata(URL);
-  send_ipdata_fin(" HTTP/1.1\r\n\r\n");
+  send_ipdata(" HTTP/1.0\r\n\r\n");
+  send_ipdata_fin();
   
-  //wait for response
-  
-  if (expect("+IPD"))
+  // wait for response IP data
+  log_mute = 1;  
+  if (expect("+IPD",5000))
     return 1;
-  if (expect("200"))
-    return 1;
+
+  // capture the : after IPD
+  log_mute = 1;  
+  find(":",500, 0, 0);
+
+  // capture the 1st response line
+  log_mute = 1;  
+  if (!find("\r\n",500,resp_buffer,buffer_length))
+    goto err_out;
   
-  //receive return document
-  if (expect("\r\n\r\n"))
-    return 1;
+  // bail out if no response code 200 is found
+  if (!strstr(resp_buffer,"200"))
+    goto err_out;
   
+  // ignore everything up to the body separator  
+  log_mute = 1;  
+  if (expect("\r\n\r\n",500))
+    goto err_out;
+    
+  // capture the response body  
+  if (!find("OK\r\n",2000,resp_buffer,buffer_length))
+    goto err_out;
   
+  // strip of a trailing OK line from lighttpd i.e.
+  *(strstr(resp_buffer,"OK\r\n")-2) = 0;
+
+  // wait until the socket was closed.  
+  expect("Unlink\r\n",3000);
   
   return 0;
+  
+  // error out: eat up eventual trailing garbage.
+  err_out:
+  find("OK\r\n",1000,0,0);
+  expect("Unlink\r\n",2000);
+  return 1;
 }
-*/
+
 
 int buffer_position = 0;
 int timeout_count = 0;
