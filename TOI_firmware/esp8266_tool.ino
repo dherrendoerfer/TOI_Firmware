@@ -80,6 +80,19 @@ int connect_host(int ch_id, char* host, int port)
   return expect("OK\r\n",3000);
 }
 
+int udp_open_host(int ch_id, char* host, int port)
+{
+  send("AT+CIPSTART=");
+  send(ch_id);
+  send(",\"UDP\",\"");
+  send(host);
+  send("\",");
+  send(port);
+  send("\r\n");
+
+  return expect("OK\r\n",3000);
+}
+
 int close_channel(int ch_id)
 {
   send("AT+CIPCLOSE=");
@@ -96,22 +109,6 @@ int stop_server(int port)
   send("\r\n");
 
   return expect("OK\r\n",1000);
-}
-
-int get_ip(char* ip, int len)
-{
-  if (!send_expect_read("AT+CIFSR","OK\r\n",1000,ip,len))
-    return 1; 
-  
-  if (strstr(ip,"\r\n"))
-    *(strstr(ip,"\r\n")) = 0;
-  
-#ifdef ESP_DEBUG
-  Serial.print("IP:");
-  Serial.println(ip);
-#endif
-
-  return 0;
 }
 
 int reset()
@@ -159,6 +156,11 @@ void send_ipdata(char* data )
   send(data);
 }
 
+void send_ipdata(char* data ,int length)
+{
+  send(data,length);
+}
+
 void send_ipdata(int data )
 {
   send(data);
@@ -167,6 +169,22 @@ void send_ipdata(int data )
 int send_ipdata_fin()
 {
   return expect("SEND OK\r\n",5000);
+}
+
+int get_ip(char* ip, int len)
+{
+  if (!send_expect_read("AT+CIFSR","OK\r\n",1000,ip,len))
+    return 1; 
+  
+  if (strstr(ip,"\r\n"))
+    *(strstr(ip,"\r\n")) = 0;
+  
+#ifdef ESP_DEBUG
+  Serial.print("IP:");
+  Serial.println(ip);
+#endif
+
+  return 0;
 }
 
 /* Note: This function is beta, it may not perform well with all
@@ -229,6 +247,78 @@ int http_req_get(char* host, int port, char* URL, char* resp_buffer, int buffer_
   find("OK\r\n",1000,0,0);
   expect("Unlink\r\n",2000);
   return 1;
+}
+
+int ntp_time_get(char* hostip)
+{
+  int ch_id=3;
+  int port=123;
+  
+  char req[48] = { 010,0,0,0,0,0,0,0,0 };
+  
+#ifdef ESP_DEBUG
+  Serial.println("Setting time via NTP:");
+#endif
+
+  // open connection
+  if (udp_open_host(ch_id, hostip, port))
+    return 1;
+
+  send_ipdata_head(ch_id, "", 48);
+  send_ipdata(req,48);
+  /* Note: no send_ipdata_fin() because we're waiting 
+     for the response immediately. */
+  
+  // wait for response IP data
+  if (expect("+IPD,3,48:",5000))
+    return 1;
+    
+  if (!find("OK\r\n",2000, req, 48))
+    return 1;
+
+  find("OK\r\n",1000,0,0);
+  close_channel(ch_id);
+  find("Unlink\r\n",2000,0,0);
+      
+#ifdef ESP_DEBUG
+  Serial.println("Got:");
+#endif
+
+  unsigned long secsSince1900 =  (unsigned long)req[43];
+                secsSince1900 += ((unsigned long)req[42] << 8 )   & 0xff00;
+                secsSince1900 += ((unsigned long)req[41] << 16 )  & 0xff0000;
+                secsSince1900 += ((unsigned long)req[40] << 24 )  & 0xff000000;
+                
+  /* Now convert NTP time into everyday time.
+   * Unix time starts on Jan 1 1970.
+   * In seconds, that's 2208988800.
+   * Subtract seventy years. */
+  unsigned long epoch = secsSince1900 - 2208988800UL;
+  
+  /* Calculate the day, hour, minute and second.
+   * UTC is the time at Greenwich Meridian (GMT). */
+  
+  /* Apply local timezone adjustment */
+  epoch += e_TZ * 3600;
+  
+  days = ((epoch - 86400L*4)  % 604800L) / 86400L; // day (604800 equals secs per week)
+  hours = (epoch  % 86400L) / 3600;                // hour (86400 equals secs per day)
+  minutes = (epoch  % 3600) / 60;                  // minute (3600 equals secs per minute)
+  seconds = epoch % 60;                            // second
+
+#ifdef ESP_DEBUG
+  Serial.println("Seconds since Jan 1 1900 = ");
+  Serial.println(secsSince1900);
+  Serial.println("Unix time = ");
+  Serial.println(epoch);
+  Serial.println("The local time is ");
+  Serial.println(days);
+  Serial.println(hours);   
+  Serial.println(minutes);       
+  Serial.println(seconds);                
+#endif
+
+  return 0;
 }
 
 

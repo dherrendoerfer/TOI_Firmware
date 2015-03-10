@@ -85,6 +85,12 @@ int request_get( char* ip_buffer, int length)
     return 0;
   }
 
+  if (strstr(URL,"/cntp.html?") == URL) {
+    /* time save page */
+    page_cntp(ch_id, URL);
+    return 0;
+  }
+
   response_404(ch_id);
     
   return 1;
@@ -281,6 +287,11 @@ prog_char content_config[] PROGMEM = "<HTML><BODY>Arduino config.html<hr>"
                          "Day(0-7):<input name=\"cd\" value=\"0\" size=\"2\"><br>"
                          "Timebase:<input name=\"cb\" value=\"1000000\" size=\"7\"><br>"
                          "<button>Set</button></form>"
+                         "<hr><form action=\"cntp.html\" method=\"get\">"
+                         "NTP client setup:<br><input type=\"checkbox\" name=\"ntp\" value=\"on\">Enable NTP<br>"
+                         "NTP server IP:<input name=\"ip\" value=\"192.168.1.1\"><br>"
+                         "Timezone: UTC+<input name=\"tz\" value=\"1\"><br>"
+                         "<button>Set</button></form>"
                          "</BODY></HTML>\r\n";
 
 void page_config(int ch_id, char* URL)
@@ -423,6 +434,52 @@ void page_cdate(int ch_id, char* URL)
   response_send_simple(ch_id, buffer, strlen(buffer));
 }
 
+/*********************************************************************************************** 
+*  cntp.html 
+*/
+prog_char content_cntp[] PROGMEM = "<HTML><BODY>TIME SET<hr><p><a href=index.html>Home</a></BODY></HTML>\r\n";
+
+void page_cntp(int ch_id, char* URL)
+{
+  char* Params = strstr(URL,"?")+1;
+
+#ifdef SERV_DEBUG  
+  Serial.print("Params:" );
+  Serial.println(Params);
+#endif
+
+  char* r_ip=strstr(Params,"ip=")+3;
+  char* r_tz=strstr(Params,"tz=")+3;
+
+  if (strstr(r_ip,"&"))
+    *(strstr(r_ip,"&")) = 0;
+  if (strstr(r_tz,"&"))
+    *(strstr(r_tz,"&")) = 0;
+
+  if (strstr(Params,"ntp=on")) {
+    e_DO_NTP=1;
+  } else {
+    e_DO_NTP=0;
+  }
+  
+  sscanf(r_tz, "%d", &e_TZ );
+  strncpy(e_NTP,r_ip,16);
+
+  if (eeprom_unlock) {
+    write_eeprom();
+  }
+  
+#ifdef SERV_DEBUG  
+  Serial.print("Set ntp:" );
+  Serial.println(r_ip);
+  Serial.print("enabled:");
+  Serial.println(e_DO_NTP);
+  Serial.print("Timezone: UTC +");
+  Serial.println(e_TZ);
+#endif
+
+  response_send_progmem(ch_id, content_c2ct, sizeof(content_c2ct));
+}
 
 /*********************************************************************************************** 
 *        END OF BUILT-IN Functions and html pages 

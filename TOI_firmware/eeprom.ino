@@ -55,6 +55,12 @@ void read_eeprom()
   t_usPerSec += ((long)EEPROM.read(byte++) << 8 ) & 0xff00;
   t_usPerSec += ((long)EEPROM.read(byte++) << 16) & 0xff0000;
   t_usPerSec += ((long)EEPROM.read(byte++) << 24) & 0xff000000;
+
+  for(i=0; i<16 ;i++) {
+    e_NTP[i] = EEPROM.read(byte++);
+  }
+  e_TZ     = EEPROM.read(byte++);
+  e_DO_NTP = EEPROM.read(byte++);
 }
 
 void write_eeprom()
@@ -78,6 +84,13 @@ void write_eeprom()
   EEPROM.write(byte++,(t_usPerSec >>  8) & 0xff);
   EEPROM.write(byte++,(t_usPerSec >> 16) & 0xff);
   EEPROM.write(byte++,(t_usPerSec >> 24) & 0xff);
+
+  for(i=0; i<16 ;i++) {
+    EEPROM.write(byte++,e_NTP[i]);
+  }
+
+  EEPROM.write(byte++,e_TZ & 0xff);
+  EEPROM.write(byte++,e_DO_NTP & 0xff);
   
   EEPROM.write(0,42);
   EEPROM.write(1,42);

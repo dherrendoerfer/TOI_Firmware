@@ -36,8 +36,10 @@ int log_mute = 0;
 
 #define SSID "DefaultSsid"
 #define PASS "DefaultPass"
+#define NTPIP "176.9.92.196"
 
-/* Pre-defined for the use of get_ip() 
+/* Pre-defined for the use of get_ip()
+   must be large enough to hold 2 IP strings
 */
 char IP[32]="000.000.000.000";
 
@@ -46,6 +48,10 @@ char e_PASS[32] = PASS;
 int  e_AP       = 0;
 int  e_ENC      = 0;
 int  e_CHAN     = 10;
+
+char e_NTP[16]  = NTPIP;
+int  e_TZ       = 0;
+int  e_DO_NTP   = 0;
 
 long t_usPerSec  = 1000000;
 
@@ -84,13 +90,16 @@ void setup()
   }
   
   /* Execute app-specific init code. */
+#ifdef INFO_DEBUG
+  Serial.println(F("Calling app_init()"));
+#endif
   app_init();
 
 }
 
 unsigned long time;
 unsigned long utime;
-unsigned long next_us_seconds = micros()+t_usPerSec;
+unsigned long next_us_seconds;
 unsigned int seconds = 0;
 unsigned int minutes = 0;
 unsigned int hours = 0;
@@ -100,6 +109,9 @@ void init_wifi()
 {
   unset_echo();
   
+#ifdef INFO_DEBUG
+    Serial.println(F("Setting up AP"));
+#endif
   if (defaultAP)
     connectAP(APSSID, APPASS, APCHAN, APENC);
   else {
@@ -120,11 +132,23 @@ void init_wifi()
 #endif
   
   set_multicon();
+
+  //get ntp day & time
+  if (e_DO_NTP) {
+#ifdef INFO_DEBUG
+    Serial.println(F("Getting initial time via NTP"));
+#endif
+    ntp_time_get(e_NTP);  
+  }
+  
   setup_server(80);
 }
 
 void loop() 
 {
+#ifdef INFO_DEBUG
+    Serial.println(F("Entering main loop()"));
+#endif
   /* Start up Wifi */
   if (!send_expect("AT","OK\r\n",500)){
     init_wifi();
@@ -135,7 +159,10 @@ void loop()
     delay(60000);
     return;
   }
- 
+
+  // prepare the next clock tick
+  next_us_seconds = micros()+t_usPerSec;
+  
   while (!shutdown) {
     time = millis();
     utime = micros();

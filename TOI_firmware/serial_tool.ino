@@ -130,7 +130,6 @@ int send_expect_read(char* sendstr, char* expectstr, int timeout, char* buffer, 
   return find(expectstr,timeout,buffer,buflen);
 }
 
-
 void send(char* sendstr) 
 {
   Serial1.print(sendstr);
@@ -139,6 +138,18 @@ void send(char* sendstr)
   Serial.println(sendstr);  
 #endif
 }
+
+void send(char* sendstr, int length) 
+{
+  int ret;
+  ret = Serial1.write(sendstr, length);
+#ifdef SER_DEBUG
+  Serial.print("Sent ");
+  Serial.print(ret);
+  Serial.println(" bytes");  
+#endif
+}
+
 
 void send(int val) 
 {
