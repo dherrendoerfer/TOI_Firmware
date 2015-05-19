@@ -15,6 +15,7 @@ wifi network, or within an existing one.
 
 
 ********************** BETA version ALERT !!!!!! **************************
+
 THIS IS BETA CODE, IT MAY BE INCOMPLETE OR BROKEN. YOU HAVE BEEN WARNED.
 
 
@@ -72,13 +73,20 @@ Currently implemented URLs:
 ---------------------------
 
 http://192.168.4.1/arduino.html  -  Landing page for Arduino TOI firmware
+
 http://192.168.4.1/config.html   -  Configuration page
+
 http://192.168.4.1/c2ee.html     -  Page to set Wifi environment settings
+
 http://192.168.4.1/c2ct.html     -  Page to set time and day
+
 http://192.168.4.1/cntp.html     -  Page to set NTP client settings
+
 http://192.168.4.1/cdate.html    -  Page to query the current time and day
 
+
 Sample wget code to set time and day:
+
 wget  -q -O - "http://192.168.4.1:80/c2ct.html?ch=$(date +'%H')&cm=$(date +'%M')&cd=$(date +'%w')"
 
 
