@@ -61,10 +61,12 @@ Usage:
 
 After powering on, the device will become an Access Point with the SSID
 "TOI_Default" and no encryption/passcode enabled. 
+
 Once connected browse to "http://192.168.4.1/arduino.html".
 Using the configuration page you may add the device to your existing
 network, or create a new AP SSID. If you change the encryption settings
 in AP mode you may need to reset the board.
+
 The sketch now includes a primitive clock, acessible via the 'cdate.html'
 URL and settable via the config page.
 
@@ -85,7 +87,7 @@ http://192.168.4.1/cntp.html     -  Page to set NTP client settings
 http://192.168.4.1/cdate.html    -  Page to query the current time and day
 
 
-Sample wget code to set time and day:
+Sample wget code to set time and day (on linux):
 
 wget  -q -O - "http://192.168.4.1:80/c2ct.html?ch=$(date +'%H')&cm=$(date +'%M')&cd=$(date +'%w')"
 
