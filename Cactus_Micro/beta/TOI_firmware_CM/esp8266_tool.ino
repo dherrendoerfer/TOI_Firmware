@@ -474,6 +474,14 @@ static int esp_poll()
 //  log_mute=1;
   find("\r\n",100, tmpbuf, sizeof(tmpbuf));
 
+  /* Catch spurious reboots from the ESP chip, 
+   * reinit the ESP and continue */
+  if (strstr(tmpbuf,"Thinker")) {
+    //Todo
+    init_wifi();
+    return 0;
+  }
+
   if (num_pkt == 0)
     return 1;
   
@@ -493,6 +501,8 @@ static int esp_poll()
     delete_packet(0);  
     return 0;
   }  
-     
+
+  delete_packet(0);  
+
   return 1;
 }
