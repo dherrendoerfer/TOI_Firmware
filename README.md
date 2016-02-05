@@ -1,6 +1,11 @@
 TOI_Firmware
 ============
 
+TOI is IoT seen from the other side. While the Internet-of-Things is
+the back end with analytics, intelligence and presentation, the 
+Things-Of-Internet are the nerves and muscles.
+TOI, because it sounds like Toy. It wants to be played with.
+
 A Things-Of-Internet firmware for the Arduino and the ESP8266 module
 
 Opposed to the popular Internet-of-things movement, where all sorts of
@@ -19,7 +24,7 @@ The firmware supports Arduino MEGA, UNO, Mini, Nano (and more) boards, with
 an ESP8266 module connected to the Serial1 port (I/O 18,19),  I/O pin
 10 and 11 for SoftwareSerial.
 To compile and build this, the Arduino 1.0.6 IDE (or higher version) is
-recommended (but no longer requred).  
+recommended (but no longer required).  
 
 Usage:
 ------
@@ -30,14 +35,28 @@ Once connected browse to "http://192.168.4.1/arduino.html".
 Using the configuration page you may add the device to your existing
 network, or create a new AP SSID. If you change the encryption settings
 in AP mode you may need to reset the board.
-The sketch now includes a primitive clock, acessible via the 'cdate.html'
+The sketch now includes a primitive clock, accessible via the 'cdate.html'
 URL and settable via the config page.
+
+Programming:
+------------
+
+TOI firmware allows you to program your own web pages and services into
+the device, much like a servlet. Please consult the included example 
+code for the documentation included within.
+
 
 Default Settings:
 -----------------
 
 You can reset the board to default settings if you restart the board with
 IO pin 12 connected to GND. 
+
+Note:
+-----
+
+Currently, the beta code for the cactus micro is the most advanced, with the
+backport to the standard version still outstanding. 
 
 Version History
 ---------------
