@@ -203,6 +203,26 @@ int get_ip(char* ip, int len)
   return 0;
 }
 
+int get_mac(char* mac, int len)
+{
+  if (send_expect("AT+CIPSTAMAC?","STAMAC,\"",1000))
+    return 1; 
+
+  if (!find("\"",1000,mac,len))
+    return 1; 
+  
+  // strip the tailing "
+  if (strstr(mac,"\""))
+    *(strstr(mac,"\"")) = 0;
+  
+#ifdef ESP_DEBUG
+  Serial.print("MAC:");
+  Serial.println(mac);
+#endif
+
+  return 0;
+}
+
 /* Note: This function is beta, it may not perform well with all
 *        available web servers. 
 */
