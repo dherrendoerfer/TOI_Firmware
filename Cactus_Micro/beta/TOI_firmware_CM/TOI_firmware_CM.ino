@@ -17,7 +17,7 @@
  *   along with TOI_firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define INFO_DEBUG 1
+#define INFO_DEBUG 1
 
 /* HARDWARE DEFINITIONS FOR CACTUS BOARD */
 #define SerialESP     Serial1

@@ -18,7 +18,7 @@
  */
 
 /*Uncomment this to see all serial traffic*/ 
-//#define SER_DEBUG 1
+#define SER_DEBUG 1
 /*Uncomment this to see serial errors*/ 
 //#define SER_ERROR 1
 
