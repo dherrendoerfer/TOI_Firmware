@@ -72,6 +72,7 @@ int _find(char* str, unsigned long timeout, char* buffer, int buflen)
         if (sp == splen){
           log_mute = 0;
           // found the search string
+          next_timeout = utime + 30000*t_usPerSec;
           return 1;
         }
       } else {
@@ -218,7 +219,7 @@ void send(char* sendstr)
 void send(char* sendstr, int length) 
 {
   int ret;
-  ret = SerialESP.write(sendstr, length);
+  ret = SerialESP.write((uint8_t*)sendstr, length);
 #ifdef SER_DEBUG
   Serial.print(F("Sent "));
   Serial.print(ret);

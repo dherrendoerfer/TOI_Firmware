@@ -37,11 +37,10 @@
 /* log_mute will mute the next log of the
  * serial read. Use for time-critical handling
  * where logging would break time constraints. */
-int log_mute = 0;
+boolean log_mute = 0;
 
-/* Pre-defined for the use of get_ip()
- * must be large enough to hold 2 IP strings */
-char IP[32]="000.000.000.000";
+/* Pre-defined for the use of get_ip() */
+char IP[16]="000.000.000.000";
 
 /* Variable declarations for settings stored
  * to EEPROM */
@@ -77,11 +76,11 @@ int   pktlen[5];
 int   pktchan_id[5];
 
 /* Declaration of the variables for the state machine */
-int shutdown = 0;
-int reboot   = 0;
-int defaultAP = 1;
-int reinit = 0;
-int mode_flasher = 0;
+boolean shutdown = 0;
+boolean reboot   = 0;
+boolean defaultAP = 1;
+boolean reinit = 0;
+boolean mode_flasher = 0;
 
 void setup()
 {
@@ -167,6 +166,9 @@ unsigned int minutes = 0;
 unsigned int hours = 0;
 unsigned int days = 0;
 
+/* Timeout handling */
+unsigned long next_timeout = 0;
+
 void init_wifi() 
 {
   unset_echo();
@@ -174,8 +176,9 @@ void init_wifi()
 #ifdef INFO_DEBUG
     Serial.println(F("Setting up AP"));
 #endif
-  if (defaultAP)
+  if (defaultAP) {
     connectAP(APSSID, APPASS, APCHAN, APENC);
+  }
   else {
     if (!e_AP) {
       connectWiFi(e_SSID, e_PASS);
@@ -184,11 +187,15 @@ void init_wifi()
     }
   }
 
+  get_ip(IP,sizeof(IP),( defaultAP | e_AP));
+
+#ifdef INFO_DEBUG
+    Serial.print(F("Local IP is:"));
+    Serial.println(IP);
+#endif
+
 //  send_expect("AT+CWLAP","OK\r\n",10000);
 //  send_expect("AT+CWJAP?","OK\r\n",10000);
-
-  /* Get own IP Address */
-  get_ip(IP,sizeof(IP));
   
 #ifdef INFO_DEBUG  
   send_dump("AT+CIFSR");
@@ -236,7 +243,7 @@ void loop()
 
   // prepare the next clock tick
   next_us_seconds = micros() + t_usPerSec;
-  
+  next_timeout = micros() + 30*t_usPerSec;
   /* duty loop, running until shutdown is set */
   while (!shutdown) {
     utime = micros();
@@ -249,7 +256,7 @@ void loop()
     /* The clock code:
      * This provides a simple running clock time with a 
      * day of the week counter. Because the Arduino quarz
-     * clock is almost always off by a few percent the clock
+     * clock is almost always off by a few percent. The clock
      * is synchronized with the micros() call and a presettable
      * value for elimination of drift. (t_usPerSec)  */
     if ( (long)(utime - next_us_seconds) >= 0 ) {
@@ -270,7 +277,10 @@ void loop()
           }
         }
       }
- 
+      
+      /* Tell the application 1 sec has passed*/
+      second_tick();
+      
 #ifdef HEARTBEAT_LED     
       /*Blink the hearteat LED*/
       digitalWrite(13, seconds % 2);
@@ -287,7 +297,31 @@ void loop()
       reinit = 0;
       init_wifi();
     }
-    
+
+    /* Timeout/health check */
+    if ((long)(utime - next_timeout) >= 0 ) {
+      char c_ip[16]="000.000.000.000";
+
+#ifdef INFO_DEBUG
+      Serial.println(F("timeout_event() called"));
+#endif
+
+      if (!get_ip(c_ip,sizeof(c_ip),( defaultAP | e_AP))) {
+#ifdef INFO_DEBUG
+        Serial.println(F("get_ip() -> OK"));
+#endif
+      }
+      
+      if ( strncmp(c_ip,IP,sizeof(c_ip)) == 0) {
+#ifdef INFO_DEBUG
+        Serial.println(F("IP -> OK"));
+#endif
+      }
+
+      timeout_event();
+      next_timeout = utime + 30*t_usPerSec;
+    }
+          
     /*Space for aditional code:
      * If you want to extend the code with your own functions
      * that should run periodically, below here is the place to

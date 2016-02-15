@@ -60,6 +60,10 @@ backport to the standard version still outstanding.
 
 Version History
 ---------------
+2016/02/01 no version     - update ESP8266 functions
+                          - fix to make the ESP8266 become more stable
+                          - added watchdog functions
+
 2015/02/02 no version     - rewrite handler functions
                           - fix to make the ESP8266 become more stable
                           - added lots of ESP8266 functions

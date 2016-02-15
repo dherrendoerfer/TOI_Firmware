@@ -20,7 +20,7 @@
 //#define ESP_DEBUG 1
 
 /* Free SRAM memory helper function.
- * This gives an approriate value of leftover free memory.
+ * This gives an appropriate value of leftover free memory.
  */
 int freeRam () {
   extern int __heap_start, *__brkval; 
@@ -183,9 +183,16 @@ int send_ipdata_fin()
   return expect("SEND OK\r\n",5000);
 }
 
-int get_ip(char* ip, int len)
+int get_ip(char* ip, int len, boolean mode)
 {
-  if (send_expect("AT+CIFSR","STAIP,\"",1000))
+  int ret;
+  
+  if (mode)
+    ret = send_expect("AT+CIPAP?","CIPAP:\"",1000);
+  else
+    ret = send_expect("AT+CIPSTA?","CIPSTA:\"",1000);
+
+  if (ret)
     return 1; 
 
   if (!find("\"",1000,ip,len))
@@ -200,7 +207,7 @@ int get_ip(char* ip, int len)
   Serial.println(ip);
 #endif
 
-  return 0;
+  return expect("OK\r\n",1000);
 }
 
 int get_mac(char* mac, int len)
@@ -220,7 +227,7 @@ int get_mac(char* mac, int len)
   Serial.println(mac);
 #endif
 
-  return 0;
+  return expect("OK\r\n",1000);
 }
 
 /* Note: This function is beta, it may not perform well with all
@@ -498,7 +505,7 @@ static int esp_poll()
    * reinit the ESP and continue */
   if (strstr(tmpbuf,"Thinker")) {
     //Todo
-    init_wifi();
+    reinit=1;
     return 0;
   }
 

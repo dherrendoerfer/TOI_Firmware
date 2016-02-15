@@ -32,6 +32,20 @@ void tick()
 
 }
 
+/* My-App specific timed code 
+   Note: keep this code fast, do not block */
+void second_tick()
+{
+
+}
+
+/* My-App specific timeout code 
+   Note: keep this code fast, do not block */
+void timeout_event()
+{
+
+}
+
 /* My-App specific shutdown code 
    Note: a reboot or shutdown is in progress */
 void shutdown_event()
