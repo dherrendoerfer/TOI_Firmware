@@ -17,6 +17,7 @@ wifi network, or within an existing one.
 
 "I don't want internet for all my things, look what it did to the children ..."
 
+
 Installation:
 -------------
 
@@ -25,6 +26,28 @@ an ESP8266 module connected to the Serial1 port (I/O 18,19),  I/O pin
 10 and 11 for SoftwareSerial.
 To compile and build this, the Arduino 1.0.6 IDE (or higher version) is
 recommended (but no longer required).  
+
+Connection:
+-----------
+
+These are the default connections required to connect the ESP to Arduino.
+
+ESP 8266 -->  Arduino
+
+VCC      -->  3.3V
+
+GND      -->  ground
+
+CH_PD    -->  3.3V
+
+RST      -->  RESET
+
+TXD      -->  RXD (Pin depends on configuration)
+
+RXD      -->  TX  (Pin depends on configuration)
+
+GPIO0    -->  Leave unconnected (Used for firmware updating)
+
 
 Usage:
 ------
