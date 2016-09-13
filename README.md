@@ -1,10 +1,6 @@
 TOI_Firmware
 ============
 
-TOI is IoT seen from the other side. While the Internet-of-Things is
-the back end with analytics, intelligence and presentation, the 
-Things-Of-Internet are the nerves and muscles.
-TOI, because it sounds like Toy. It wants to be played with.
 
 A Things-Of-Internet firmware for the Arduino and the ESP8266 module
 
@@ -18,12 +14,20 @@ wifi network, or within an existing one.
 "I don't want internet for all my things, look what it did to the children ..."
 
 
+Philosophy
+----------
+
+TOI is IoT seen from the other side.  
+While the Internet-of-Things is the back end with analytics, intelligence and presentation, the Things-Of-Internet are the nerves and muscles.    
+TOI! also because it sounds like Toy. It wants to be played with.  
+
+
 Installation:
 -------------
 
 The firmware supports Arduino MEGA, UNO, Mini, Nano (and more) boards, with 
 an ESP8266 module connected to the Serial1 port (I/O 18,19),  I/O pin
-10 and 11 for SoftwareSerial.
+10 and 11 for SoftwareSerial.  
 To compile and build this, the Arduino 1.0.6 IDE (or higher version) is
 recommended (but no longer required).  
 
@@ -31,33 +35,26 @@ Connection:
 -----------
 
 These are the default connections required to connect the ESP to Arduino.
-
-ESP 8266 -->  Arduino
-
-VCC      -->  3.3V
-
-GND      -->  ground
-
-CH_PD    -->  3.3V
-
-RST      -->  RESET
-
-TXD      -->  RXD (Pin depends on configuration)
-
-RXD      -->  TX  (Pin depends on configuration)
-
-GPIO0    -->  Leave unconnected (Used for firmware updating)
-
+```
+   ESP 8266 -->  Arduino  
+   VCC      -->  3.3V  
+   GND      -->  ground  
+   CH_PD    -->  3.3V  
+   RST      -->  RESET  
+   TXD      -->  RXD (Pin depends on configuration)  
+   RXD      -->  TX  (Pin depends on configuration)  
+   GPIO0    -->  Leave unconnected (Used for firmware updating)  
+```
 
 Usage:
 ------
 
 After powering on, the device will become an Access Point with the SSID
-"TOI_Default" and no encryption/passcode enabled. 
-Once connected browse to "http://192.168.4.1/arduino.html".
+"TOI_Default" and no encryption/passcode enabled.   
+Once connected browse to "http://192.168.4.1/arduino.html".  
 Using the configuration page you may add the device to your existing
 network, or create a new AP SSID. If you change the encryption settings
-in AP mode you may need to reset the board.
+in AP mode you may need to reset the board.  
 The sketch now includes a primitive clock, accessible via the 'cdate.html'
 URL and settable via the config page.
 
@@ -83,6 +80,8 @@ backport to the standard version still outstanding.
 
 Version History
 ---------------
+
+```
 2016/02/01 no version     - update ESP8266 functions
                           - fix to make the ESP8266 become more stable
                           - added watchdog functions
@@ -107,3 +106,4 @@ Version History
                           - added clock. More comments
                           
 2015/01/05 no version yet - first commit of alpha
+```
